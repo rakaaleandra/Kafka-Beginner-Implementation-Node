@@ -5,7 +5,7 @@
     "main": "producer_server.js",
     "scripts": {
         "dev:producer": "nodemon producer_server.js",
-        "dev:consumer": "nodemon consumer_server.js"
+        "dev:consumer": "nodemon consumer_server.js",
         "start:producer": "node producer_server.js",
         "start:consumer": "node consumer_server.js"
     },
