@@ -4,8 +4,10 @@
     "description": "A beginner implementation of Kafka producers and consumers using Node.js",
     "main": "producer_server.js",
     "scripts": {
-        "start:producer": "nodemon producer_server.js",
-        "start:consumer": "nodemon consumer_server.js"
+        "dev:producer": "nodemon producer_server.js",
+        "dev:consumer": "nodemon consumer_server.js"
+        "start:producer": "node producer_server.js",
+        "start:consumer": "node consumer_server.js"
     },
     "dependencies": {
         "cassandra-driver": "^4.8.0",
