@@ -19,7 +19,7 @@ const producer = kafka.producer({
 const runProducer = async () => {
   // Connect once when the server starts
   await producer.connect();
-  console.log('✅ Producer connected to Kafka Broker');
+  console.log('Producer connected to Kafka Broker');
 
   // Simple HTML form UI
   app.get('/', (req, res) => {
@@ -52,7 +52,7 @@ const runProducer = async () => {
         messages: [{ value: message }],
       });
 
-      console.log(`📤 Sent: "${message}"`);
+      console.log(`Sent: "${message}"`);
       // If form submission, show confirmation
       if (req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
         res.send(`<p>Message sent: ${message}</p><a href="/">Back</a>`);
@@ -66,8 +66,8 @@ const runProducer = async () => {
   });
 
   app.listen(port, () => {
-    console.log(`🚀 Producer Server running on port ${port}`);
-    console.log(`👉 Send POST requests to http://localhost:${port}/produce with JSON body: { "message": "Hello" }`);
+    console.log(`Producer Server running on port ${port}`);
+    console.log(`Send POST requests to http://localhost:${port}/produce with JSON body: { "message": "Hello" }`);
   });
 };
 

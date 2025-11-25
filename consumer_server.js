@@ -16,7 +16,7 @@ const runConsumer = async () => {
   await consumer.connect();
   await consumer.subscribe({ topic: 'notifications', fromBeginning: true });
 
-  console.log('✅ Consumer connected and subscribed');
+  console.log('Consumer connected and subscribed');
 
   // Store the latest message
   let latestMessage = '';
@@ -25,7 +25,7 @@ const runConsumer = async () => {
     eachMessage: async ({ topic, partition, message }) => {
       const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`;
       latestMessage = message.value.toString();
-      console.log(`📥 CONSUMER RECEIVED: ${prefix} - ${latestMessage}`);
+      console.log(`CONSUMER RECEIVED: ${prefix} - ${latestMessage}`);
     },
   });
 
@@ -60,7 +60,7 @@ const runConsumer = async () => {
   });
 
   app.listen(port, () => {
-    console.log(`👂 Consumer Server running on port ${port}`);
+    console.log(`Consumer Server running on port ${port}`);
   });
 };
 
