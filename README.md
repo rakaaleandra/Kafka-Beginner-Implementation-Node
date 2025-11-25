@@ -11,3 +11,8 @@ producer-nya di port 3000
 consumer-nya di port 3001
 
     npm run start:consumer
+
+ni yang bisa
+
+    node producer_server.js
+    node consumer_server.js

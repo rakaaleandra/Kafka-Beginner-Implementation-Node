@@ -4,19 +4,21 @@
     "description": "A beginner implementation of Kafka producers and consumers using Node.js",
     "main": "producer_server.js",
     "scripts": {
-      "start:producer": "nodemon producer_server.js",
-      "start:consumer": "nodemon consumer_server.js"
+        "start:producer": "nodemon producer_server.js",
+        "start:consumer": "nodemon consumer_server.js"
     },
     "dependencies": {
-      "express": "^4.18.2",
-      "kafkajs": "^2.2.4"
+        "cassandra-driver": "^4.8.0",
+        "express": "^4.18.2",
+        "kafkajs": "^2.2.4",
+        "openmeteo": "^1.2.2"
     },
     "keywords": [
-      "kafka",
-      "node",
-      "express",
-      "kafkajs"
+        "kafka",
+        "node",
+        "express",
+        "kafkajs"
     ],
     "author": "",
     "license": "ISC"
-  }
+}

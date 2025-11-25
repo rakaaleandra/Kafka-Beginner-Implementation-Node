@@ -1,5 +1,6 @@
 const express = require('express');
 const { Kafka } = require('kafkajs');
+let cassandra = require('cassandra-driver');
 
 const app = express();
 const port = 3001;
