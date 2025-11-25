@@ -18,18 +18,45 @@ const runConsumer = async () => {
 
   console.log('✅ Consumer connected and subscribed');
 
-  // Start the Kafka Consumer
+  // Store the latest message
+  let latestMessage = '';
+
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`;
-      console.log(`📥 CONSUMER RECEIVED: ${prefix} - ${message.value.toString()}`);
+      latestMessage = message.value.toString();
+      console.log(`📥 CONSUMER RECEIVED: ${prefix} - ${latestMessage}`);
     },
   });
 
-  // Start the Express server just to keep the process "listening" on a port
-  // and to provide a status endpoint
+  // Simple UI: message box and button
   app.get('/', (req, res) => {
-    res.send('Consumer is running and listening to Kafka...');
+    res.send(`
+      <html>
+        <body>
+          <h2>Kafka Consumer</h2>
+          <div>
+            <label>Latest Message:</label>
+            <div id="msgbox" style="border:1px solid #ccc;padding:10px;min-height:30px;">${latestMessage || 'No message yet.'}</div>
+            <button onclick="consumeMsg()">Consume</button>
+          </div>
+          <script>
+            function consumeMsg() {
+              fetch('/latest')
+                .then(r => r.json())
+                .then(d => {
+                  document.getElementById('msgbox').innerText = d.message || 'No message yet.';
+                });
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
+  // Endpoint to get the latest message
+  app.get('/latest', (req, res) => {
+    res.json({ message: latestMessage });
   });
 
   app.listen(port, () => {
