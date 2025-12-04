@@ -1,5 +1,15 @@
 # Kafka-Beginner-Implementation-Node
 
+Create topic
+```
+docker exec kafka kafka-topics --create --topic weather-topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
+```
+
+List Topic
+```
+docker exec kafka kafka-topics --list  --bootstrap-server kafka:9092
+```
+
 buat kafka-nya
 
     docker compose up

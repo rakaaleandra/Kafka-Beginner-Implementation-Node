@@ -6,11 +6,10 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  broker:
+  kafka:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: broker
+    container_name: kafka
     ports:
-      # Exposes 9092 for external connections (host machine)
       - "9092:9092"
     depends_on:
       - zookeeper
@@ -22,3 +21,4 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKAJS_NO_PARTITIONER_WARNING: 0

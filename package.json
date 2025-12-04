@@ -1,19 +1,21 @@
 {
     "name": "kafka-beginner-implementation-node",
     "version": "1.0.0",
+    "type": "module",
     "description": "A beginner implementation of Kafka producers and consumers using Node.js",
     "main": "producer_server.js",
     "scripts": {
-        "dev:producer": "nodemon producer_server.js",
-        "dev:consumer": "nodemon consumer_server.js",
-        "start:producer": "node producer_server.js",
-        "start:consumer": "node consumer_server.js"
+        "dev:produce": "nodemon src/produce/index.js",
+        "dev:consume": "nodemon src/consume/index.js",
+        "start:produce": "node src/produce/index.js",
+        "start:consume": "node src/consumee/index.js"
     },
     "dependencies": {
         "cassandra-driver": "^4.8.0",
+        "dotenv": "^17.2.3",
         "express": "^4.18.2",
         "kafkajs": "^2.2.4",
-        "openmeteo": "^1.2.2"
+        "nodemon": "^3.1.11"
     },
     "keywords": [
         "kafka",
