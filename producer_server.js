@@ -1,15 +1,8 @@
 import express from 'express';
 import { Kafka, Partitioners } from 'kafkajs';
-import { fetchWeatherApi } from "openmeteo";
+import dotenv from 'dotenv';
 
-const params = {
-	latitude: -7.5561,
-	longitude: 11.683167,
-	hourly: "temperature_2m",
-};
-const url = "https://api.open-meteo.com/v1/forecast";
-const responses = await fetchWeatherApi(url, params);
-
+dotenv.config();
 const app = express();
 const port = 3000;
 
@@ -25,37 +18,28 @@ const producer = kafka.producer({
   createPartitioner: Partitioners.LegacyPartitioner 
 });
 
-// Process first location. Add a for-loop for multiple locations or weather models
-const response = responses[0];
+const getAirQualityData = async () => {
+  const apiKey = process.env.API_KEY;
+  const id = 'A416908';
+  const url = `https://api.waqi.info/feed/${id}/?token=${apiKey}`;
 
-// Attributes for timezone and location
-const latitude = response.latitude();
-const longitude = response.longitude();
-const elevation = response.elevation();
-const utcOffsetSeconds = response.utcOffsetSeconds();
+  const response = await fetch(url);
+  const data = await response.json();
 
-console.log(
-	`\nCoordinates: ${latitude}°N ${longitude}°E`,
-	`\nElevation: ${elevation}m asl`,
-	`\nTimezone difference to GMT+0: ${utcOffsetSeconds}s`,
-);
+  if (data.status !== 'ok') {
+    throw new Error('Failed to fetch air quality data');
+  }
 
-const hourly = response.hourly();
-
-// Note: The order of weather variables in the URL query and the indices below need to match!
-const weatherData = {
-	hourly: {
-		time: Array.from(
-			{ length: (Number(hourly.timeEnd()) - Number(hourly.time())) / hourly.interval() }, 
-			(_, i) => new Date((Number(hourly.time()) + i * hourly.interval() + utcOffsetSeconds) * 1000)
-		),
-		temperature_2m: hourly.variables(0).valuesArray(),
-
-	},
-};
-
-// The 'weatherData' object now contains a simple structure, with arrays of datetimes and weather information
-// console.log("\nHourly data:\n", weatherData.hourly)
+  const aqi = data.data.aqi;
+  const city = data.data.city.name;
+  const time = data.data.time.s;
+  console.log(`City: ${city}, AQI: ${aqi}, Time: ${time}`);
+  return [{
+    city,
+    aqi,
+    time
+  }];
+}
 
 const runProducer = async () => {
   // Connect once when the server starts
@@ -77,68 +61,59 @@ const runProducer = async () => {
     `);
   });
 
-  setInterval(() => {
-    // Dapatkan waktu sekarang (sesuai timezone lokasi dari API)
-    const now = new Date(Date.now() + utcOffsetSeconds * 1000);
-    // const now = new Date(2025, 2, 10, 2, 30);
-  
-    // Cari index timestamp hourly yang cocok dengan jam sekarang
-    const times = weatherData.hourly.time;
-    const temps = weatherData.hourly.temperature_2m;
-  
-    // Cari index waktu precision 1 jam
-    const indexNow = times.findIndex(t => 
-        t.getHours() === now.getHours() &&
-        t.getDate() === now.getDate()
-    );
-  
-    if (indexNow !== -1) {
-      console.log("Current time:", times[indexNow]);
-      console.log("Current temperature:", temps[indexNow], "°C");
-      const timeMessage = times[indexNow].toISOString();
-      const message = temps[indexNow].toString();
-      const topic = 'notifications';
-      producer.send({
-        topic: topic,
-        messages: [{ key: 'key1' , value: message }],
-        // messages: [
-        //   { key: 'key1', value: message, partition: 0 },
-        //   { key: 'key2', value: timeMessage, partition: 1 }
-        // ],
-      });
-    } else {
-      console.log("Data untuk waktu sekarang tidak ditemukan.");
-    }
-  }, 10000); // Keep the event loop alive for async operations
-
-  // Accept both JSON and form submissions
-  app.post('/produce', express.urlencoded({ extended: true }), async (req, res) => {
+  setInterval(async () => {
     try {
-      // Accept from either JSON or form
-      const message = req.body.message || (req.body && req.body.message);
-      const topic = 'notifications';
-
-      if (!message) {
-        return res.status(400).send('Message body is required');
-      }
-
+      const aqiRecords = await getAirQualityData();
+      if (!aqiRecords || aqiRecords.length === 0) return;
+      
       await producer.send({
-        topic: topic,
-        messages: [{ value: message }],
-      });
+        topic: 'aqi-topic',
+        messages: aqiRecords.map(record => ({ 
+          value: JSON.stringify(record) 
+        })),
+      })
+      console.log(`Sent ${aqiRecords.length} aqi records`)
 
-      console.log(`Sent: "${message}"`);
-      // If form submission, show confirmation
-      if (req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
-        res.send(`<p>Message sent: ${message}</p><a href="/">Back</a>`);
-      } else {
-        res.send({ status: 'Message sent', message });
-      }
-    } catch (error) {
-      console.error('Error sending message', error);
-      res.status(500).send('Error sending message');
+    } catch (err) {
+      console.error('Send error:', err)
     }
-  });
+    // producer.send({
+    //   topic: topic,
+    //   messages: [{ key: 'key1' , value: message }],
+    //   // messages: [
+    //   //   { key: 'key1', value: message, partition: 0 },
+    //   //   { key: 'key2', value: timeMessage, partition: 1 }
+    //   // ],
+    // });
+  }, 3000); // Keep the event loop alive for async operations
+
+
+  // app.post('/produce', express.urlencoded({ extended: true }), async (req, res) => {
+  //   try {
+  //     const message = req.body.message || (req.body && req.body.message);
+  //     const topic = 'notifications';
+
+  //     if (!message) {
+  //       return res.status(400).send('Message body is required');
+  //     }
+
+  //     await producer.send({
+  //       topic: topic,
+  //       messages: [{ value: message }],
+  //     });
+
+  //     console.log(`Sent: "${message}"`);
+  //     // If form submission, show confirmation
+  //     if (req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
+  //       res.send(`<p>Message sent: ${message}</p><a href="/">Back</a>`);
+  //     } else {
+  //       res.send({ status: 'Message sent', message });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error sending message', error);
+  //     res.status(500).send('Error sending message');
+  //   }
+  // });
 
   app.listen(port, () => {
     console.log(`Producer Server running on port ${port}`);

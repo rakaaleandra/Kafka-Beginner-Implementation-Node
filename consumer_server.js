@@ -13,7 +13,6 @@ const kafka = new Kafka({
 
 const consumer = kafka.consumer({ groupId: 'test-group-1' });
 
-// 2. Initialize Cassandra Client
 const cassandraClient = new cassandra.Client({
   contactPoints: ['127.0.0.1'],
   localDataCenter: 'datacenter1',
@@ -23,7 +22,7 @@ const cassandraClient = new cassandra.Client({
 
 const runConsumer = async () => {
   await consumer.connect();
-  await consumer.subscribe({ topic: 'notifications', fromBeginning: true });
+  await consumer.subscribe({ topic: 'aqi-topic' })
 
   console.log('Consumer connected and subscribed');
 
@@ -32,24 +31,33 @@ const runConsumer = async () => {
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`;
-      latestMessage = message.value.toString();
-      const key = message.key?.toString();
-      const value = message.value?.toString();
+      const record = JSON.parse(message.value.toString());
+      console.log('\n==================================');
+      console.log(`Received message from: ${topic}`);
+      console.log(`Partition: ${partition}`);
+      console.log(`City: ${record.city}`);
+      console.log(`AQI: ${record.aqi}`);
+      console.log(`Time: ${record.time}`);
+      console.log('==================================');
       const offset = message.offset;
       const timestamp = message.timestamp;
-      console.log(`CONSUMER RECEIVED: ${prefix} - ${latestMessage} - ${key}`);
+      const key = message.key?.toString();
+      const city = record.city;
+      const aqi = record.aqi;
+      const time = record.time;
       const query = `
-        INSERT INTO messages (id, topic, partition, offset, key, value, timestamp)
-        VALUES (uuid(), ?, ?, ?, ?, ?, ?)
+        INSERT INTO messages (id, topic, partition, offset, key, city, aqi, time, timestamp)
+        VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       await cassandraClient.execute(query, [
         topic,
-        partition,
-        offset,
+        partition.toString(),
+        offset.toString(),
         key,
-        value,
-        timestamp
+        city,
+        aqi.toString(),
+        time.toString(),
+        timestamp.toString()
       ], { prepare: true });
     },
   });
