@@ -3,8 +3,8 @@ import { Kafka, Partitioners } from 'kafkajs';
 import { fetchWeatherApi } from "openmeteo";
 
 const params = {
-	latitude: 52.52,
-	longitude: 13.41,
+	latitude: -7.5561,
+	longitude: 11.683167,
 	hourly: "temperature_2m",
 };
 const url = "https://api.open-meteo.com/v1/forecast";
@@ -95,16 +95,21 @@ const runProducer = async () => {
     if (indexNow !== -1) {
       console.log("Current time:", times[indexNow]);
       console.log("Current temperature:", temps[indexNow], "°C");
+      const timeMessage = times[indexNow].toISOString();
       const message = temps[indexNow].toString();
       const topic = 'notifications';
       producer.send({
         topic: topic,
-        messages: [{ value: message }],
+        messages: [{ key: 'key1' , value: message }],
+        // messages: [
+        //   { key: 'key1', value: message, partition: 0 },
+        //   { key: 'key2', value: timeMessage, partition: 1 }
+        // ],
       });
     } else {
       console.log("Data untuk waktu sekarang tidak ditemukan.");
     }
-  }, 1000); // Keep the event loop alive for async operations
+  }, 10000); // Keep the event loop alive for async operations
 
   // Accept both JSON and form submissions
   app.post('/produce', express.urlencoded({ extended: true }), async (req, res) => {

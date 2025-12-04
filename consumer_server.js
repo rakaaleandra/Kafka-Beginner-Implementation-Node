@@ -1,6 +1,6 @@
-const express = require('express');
-const { Kafka } = require('kafkajs');
-let cassandra = require('cassandra-driver');
+import express from 'express';
+import { Kafka, Partitioners } from 'kafkajs';
+import cassandra from 'cassandra-driver';
 
 const app = express();
 const port = 3001;
@@ -12,6 +12,14 @@ const kafka = new Kafka({
 });
 
 const consumer = kafka.consumer({ groupId: 'test-group-1' });
+
+// 2. Initialize Cassandra Client
+const cassandraClient = new cassandra.Client({
+  contactPoints: ['127.0.0.1'],
+  localDataCenter: 'datacenter1',
+  protocolOptions: { port: 9042 },
+  keyspace: 'kafka_data',
+});
 
 const runConsumer = async () => {
   await consumer.connect();
@@ -26,7 +34,23 @@ const runConsumer = async () => {
     eachMessage: async ({ topic, partition, message }) => {
       const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`;
       latestMessage = message.value.toString();
-      console.log(`CONSUMER RECEIVED: ${prefix} - ${latestMessage}`);
+      const key = message.key?.toString();
+      const value = message.value?.toString();
+      const offset = message.offset;
+      const timestamp = message.timestamp;
+      console.log(`CONSUMER RECEIVED: ${prefix} - ${latestMessage} - ${key}`);
+      const query = `
+        INSERT INTO messages (id, topic, partition, offset, key, value, timestamp)
+        VALUES (uuid(), ?, ?, ?, ?, ?, ?)
+      `;
+      await cassandraClient.execute(query, [
+        topic,
+        partition,
+        offset,
+        key,
+        value,
+        timestamp
+      ], { prepare: true });
     },
   });
 
